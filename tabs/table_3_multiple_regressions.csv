@@ -1,0 +1,28 @@
+dg;out;pred;b;b_se;z;p;OR;OR_CI95;flag
+IH;Fatigue;ESS_sc;0.373;0.406;0.918;0.359;1.45;[0.65, 3.22];
+IH;Fatigue;FSS_sc;0.522;0.426;1.225;0.221;1.69;[0.73, 3.89];
+IH;Fatigue;NSS_sc;;;;;;;
+IH;Imperative_sleepiness;ESS_sc;1.100;0.863;1.275;0.202;3.00;[0.55, 16.29];
+IH;Imperative_sleepiness;FSS_sc;-0.097;0.738;-0.131;0.896;0.91;[0.21, 3.85];
+IH;Imperative_sleepiness;NSS_sc;;;;;;;
+IH;Falling_asleep_in_calm_situations;ESS_sc;-0.215;0.530;-0.406;0.684;0.81;[0.29, 2.28];
+IH;Falling_asleep_in_calm_situations;FSS_sc;1.323;0.876;1.510;0.131;3.75;[0.67, 20.90];
+IH;Falling_asleep_in_calm_situations;NSS_sc;;;;;;;
+NT1;Fatigue;ESS_sc;0.158;0.427;0.371;0.711;1.17;[0.51, 2.70];
+NT1;Fatigue;FSS_sc;1.703;0.547;3.113;0.002;5.49;[1.88, 16.04];:-)
+NT1;Fatigue;NSS_sc;-0.425;0.391;-1.087;0.277;0.65;[0.30, 1.41];
+NT1;Imperative_sleepiness;ESS_sc;-0.175;0.348;-0.503;0.615;0.84;[0.42, 1.66];
+NT1;Imperative_sleepiness;FSS_sc;0.478;0.332;1.439;0.150;1.61;[0.84, 3.09];
+NT1;Imperative_sleepiness;NSS_sc;0.418;0.354;1.180;0.238;1.52;[0.76, 3.04];
+NT1;Falling_asleep_in_calm_situations;ESS_sc;0.044;0.363;0.120;0.905;1.04;[0.51, 2.13];
+NT1;Falling_asleep_in_calm_situations;FSS_sc;0.226;0.324;0.697;0.486;1.25;[0.66, 2.37];
+NT1;Falling_asleep_in_calm_situations;NSS_sc;-0.144;0.366;-0.393;0.694;0.87;[0.42, 1.77];
+NT2;Fatigue;ESS_sc;1.506;0.814;1.850;0.064;4.51;[0.91, 22.25];
+NT2;Fatigue;FSS_sc;-3.064;2.188;-1.400;0.161;0.05;[0.00, 3.40];
+NT2;Fatigue;NSS_sc;2.589;2.219;1.166;0.243;13.31;[0.17, 1031.38];
+NT2;Imperative_sleepiness;ESS_sc;0.000;59784.332;0.000;1.000;1.00;[0.00, Inf];
+NT2;Imperative_sleepiness;FSS_sc;-0.000;101011.337;-0.000;1.000;1.00;[0.00, Inf];
+NT2;Imperative_sleepiness;NSS_sc;0.000;98780.826;0.000;1.000;1.00;[0.00, Inf];
+NT2;Falling_asleep_in_calm_situations;ESS_sc;2.581;2.006;1.287;0.198;13.22;[0.26, 674.60];
+NT2;Falling_asleep_in_calm_situations;FSS_sc;3.935;4.555;0.864;0.388;51.15;[0.01, 385654.21];
+NT2;Falling_asleep_in_calm_situations;NSS_sc;-5.215;5.093;-1.024;0.306;0.01;[0.00, 117.72];
