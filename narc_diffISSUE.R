@@ -93,6 +93,7 @@ for ( i in unique(d1$dg) ) t2[[i]] <- cbind(
   # percentage
   ( ( table( ( d1[ d1$dg == i, ] %>% filter( !is.na(index) ) )$label ) %>% sort(decreasing = T) ) / # raw numbers
       length( d1[ d1$dg == i, ]$record.ID %>% unique() ) * 100 ) %>% # divide by number of patients|diagnosis
+      #length( ( d1[ d1$dg == i, ] %>% filter( !is.na(index) ) )$label ) * 100 ) %>% # divide by number of difficulties/diagnosis
     round(1) %>% sprintf("%.1f",.) %>% as.data.frame() # tidy up
   
   ) %>%
@@ -100,11 +101,14 @@ for ( i in unique(d1$dg) ) t2[[i]] <- cbind(
   # clean the table
   mutate( freq = paste0( Freq, " (", ., " %)") ) %>% # prepare a column with output "N (%)"
   rownames_to_column( var = "placing" ) %>% # add placing for merging across diagnoses
+  mutate( placing = as.integer(placing) ) %>%
   `colnames<-`( c( "placing", paste0(i, ".diff"), "freq", "perc", paste0( i, ".freq") ) ) %>% # name the columns
   select( -freq, -perc ) # keep only variables of interest
 
 # merge the tables
-t2 <- merge( t2$NT1, t2$NT2, by = "placing", all = T, sort = F ) %>% merge( ., t2$IH, by = "placing", all = T, sort = F )
+t2 <- merge( t2$NT1, t2$NT2, by = "placing", all = T, sort = F ) %>%
+  merge( ., t2$IH, by = "placing", all = T, sort = F ) %>%
+  arrange( ., placing )
 
 # save the resulting table as .csv
 write.table( t2, file = "tabs/table_2.csv", sep = ",", row.names = F, quote = F, na = "-" )
@@ -215,8 +219,6 @@ for ( i in names(d3) ) {
     }
   }
 }
-
-
 
 # fill-in values into t4
 for ( i in 1:nrow(t4) ) {
