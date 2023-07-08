@@ -12,6 +12,9 @@ for ( i in pkgs ) {
 # set working directory (works only in RStudio)
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
+# prepare a folder for tables, figures, models, and sessions info
+sapply( c("tabs","figs","mods","sess","_nogithub","_nogithub/data"), function(i) if( !dir.exists(i) ) dir.create(i) )
+
 
 # ---- import raw data ----
 
