@@ -59,5 +59,8 @@ t.freq <- with( t.freq, merge( NT1, NT2, by = "placing", all = T, sort = F ) ) %
 # save the resulting table as .csv
 write.table( t.freq, file = "tabs/table_2_percentages_of_difficulties_across_patients.csv", sep = ",", row.names = F, quote = F, na = "-" )
 
+
+# ---- write down session info ----
+
 # write the sessionInfo() into a .txt file
 capture.output( sessionInfo(), file = "sess/desc.txt" )
