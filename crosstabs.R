@@ -13,10 +13,10 @@ for ( i in pkgs ) {
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # read the data sets for analysis
-d <- read.csv( "_nogithub/data/df.csv", sep = ";" )
+d <- read.csv( "_nogithub/data/df.csv", sep = ";" ) %>% mutate( `Lék...který` = as.character(`Lék...který`) )
 
 # list all moderators of interest as weel as all diagnoses under study
-mods <- names(d)[ c(3,5,8,9,11,14,16,17,19,21,23,25,27,28,30) ]
+mods <- names(d)[ c(3,5,8,9,10,11,14,16,17,19,21,23,25,27,28,30) ]
 dg <- levels( as.factor( d$dg ) )
 
 
@@ -24,6 +24,11 @@ dg <- levels( as.factor( d$dg ) )
 
 # extract crosstabs for each issue per diagnosis and each moderator separately
 ct <- lapply( setNames( mods, mods ), function(i) with( d, table( label, get(i), dg ) ) %>% array( . , dim = dim(.), dimnames = dimnames(.) ) )
+
+# get rid of columns that are not defined (such as cataplexy frequency in NT1 or IH)
+ct$přítomnost.kataplexie <- ct$přítomnost.kataplexie[ , , "NT1"] # cataplexy defined for NT1 only
+ct$frekvence.kataplexií <- ct$frekvence.kataplexií[ , , "NT1"] # ditto
+ct$NSS.stupeň <- ct$NSS.stupeň[ , , c("NT1","NT2") ] # NSS ain't used in IH
 
 # prepare a folder for crosstabs
 if( !dir.exists("tabs/crosstabs") ) dir.create("tabs/crosstabs")
@@ -37,27 +42,38 @@ cross <- lapply( setNames(mods, mods),
                    
                    # prepare a list with all marginal and combined contingency tables
                    list( # marginal crosstabs
-                         marg_dia = apply( ct[[i]], c(1,3), sum ), # marginal diagnosis
-                         marg_mod = apply( ct[[i]], c(1,2), sum ), # marginal moderator "i"
+                         if( grepl("kata",i) ) rowSums( ct[[i]] ) %>% as.data.frame() else apply( ct[[i]], c(1,3), sum ), # marginal diagnosis
+                         if( grepl("kata",i) ) ct[[i]] else apply( ct[[i]], c(1,2), sum ), # marginal moderator "i"
                          
                          # combined crosstabs
-                         comb = lapply( 1:dim(ct[[i]])[2], function(j) ct[[i]][ , j , ] ) %>% # combined diagnosis/moderator columns
-                           do.call( cbind, . ) %>% # glue each moderator level specific table together
-                           `colnames<-`( expand.grid( dimnames(ct[[i]])[[3]], dimnames(ct[[i]])[[2]] ) %>% # rename columns
-                                           apply( . , 1 , paste, collapse = "_" ) )
+                         if ( grepl("kata",i) ) ct[[i]] # for cataplexy marg_mod == comb
+                         else lapply( 1:dim(ct[[i]])[2], function(j) ct[[i]][ , j , ] ) %>% # combined diagnosis/moderator columns
+                           # glue each moderator level specific table together
+                           do.call( cbind, . ) %>%
+                           # rename columns
+                           `colnames<-`( expand.grid( dimnames(ct[[i]])[[3]], dimnames(ct[[i]])[[2]] ) %>% apply( . , 1 , paste, collapse = "_" ) )
                          
-                         ) )
+                         # add names to the sublists
+                         ) %>% `names<-`( c("marg_dia","marg_mod","comb") )
+                 )
 
 # add simple contrasts within diagnoses and moderator levels for further description and save resulting tables as .xlsx
 for ( i in mods ) {
   
-  # adding diagnosis-specific and moderator level-specific tables
-  for ( j in dg ) cross[[i]][[ paste0("dia_",j) ]] <- ct[[i]][ , , j ]
-  for ( j in dimnames(ct[[i]])[[2]] ) cross[[i]][[ paste0("mod_",j) ]] <- ct[[i]][ , j , ]
+  # for cataplexy save table only
+  if( grepl("kata",i) ) write.xlsx( cross[[i]], file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = T )
   
-  # saving the table as .xlsx
-  write.xlsx( cross[[i]], file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = T )
-  
+  # for all remaining extract simple contrasts before saving
+  else {
+    
+    # adding diagnosis-specific and moderator level-specific tables
+    for ( j in dimnames(ct[[i]])[[3]] ) cross[[i]][[ paste0("dia_",j) ]] <- ct[[i]][ , , j ]
+    for ( j in dimnames(ct[[i]])[[2]] ) cross[[i]][[ paste0("mod_",j) ]] <- ct[[i]][ , j , ]
+    
+    # saving the table as .xlsx
+    write.xlsx( cross[[i]], file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = T )
+
+  }
 }
 
 
@@ -77,7 +93,7 @@ if( !file.exists("tabs/fisher_test.csv") ) {
     setNames( c("marg_mod","comb"), c("marg_mod","comb") ),
     function(j)
       
-      # for each moderator simulate 200 p-values based on one hundred thousands replicates of Monte Carlos Fisher rest for count data  
+      # for each moderator simulate 200 p-values based on one hundred thousands replicates of Monte Carlo Fisher rest for count data  
       sapply( 1:200, function(k) fisher.test( cross[[i]][[j]], simulate.p.value = T, B = 1e5 )$p.value ) %>%
       as.data.frame() %>%
       mutate( var = i, type = sub( "_.*", "", j ) )
@@ -95,6 +111,7 @@ if( !file.exists("tabs/fisher_test.csv") ) {
 
 # prepare a table with maximal p-value (the most conservative one) for each tested variable
 tab <- p %>%
+  filter( !( grepl("kata",var) & type == "comb") ) %>% # keep only marginal cataplexy results (valid for NT1 only)
   group_by( var, type ) %>% # split by crosstabs
   slice( which.max(p) ) %>% # keep only the maximum p-value
   mutate( 'p < .05' = ifelse( p < .05, "*", "" ), 'sig.' = ifelse( p < ( .05/nrow(.) ), "*", "" ) ) %>%
