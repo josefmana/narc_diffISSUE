@@ -18,6 +18,7 @@ d <- read.csv( "_nogithub/data/df.csv", sep = ";" ) %>% mutate( `Lék...který` 
 # list all moderators of interest as weel as all diagnoses under study
 mods <- names(d)[ c(3,5,8,9,10,11,14,16,17,19,21,23,25,27,28,30) ]
 dg <- levels( as.factor( d$dg ) )
+is <- na.omit( unique( d$label ) )
 
 
 # ---- crosstabs extraction ----
@@ -61,7 +62,7 @@ cross <- lapply( setNames(mods, mods),
 for ( i in mods ) {
   
   # for cataplexy continue right away
-  if( grepl("kata",i) ) next
+  if ( grepl("kata",i) ) next
   
   # for all remaining extract simple contrasts
   else {
@@ -105,6 +106,7 @@ for ( i in mods ) {
   )
 }
 
+
 # ---- crosstabs figures ---
 
 # set ggplot theme
@@ -146,14 +148,14 @@ for ( i in mods ) {
 # ---- statistical analysis ----
 
 # if there are no p-values calculated yet, calculate Fisher test from a scratch
-if( !file.exists("tabs/fisher_test.csv") ) {
+if ( !file.exists("tabs/fisher_test.csv") ) {
   
   # calculate two hundred p-values based on one hundred thousands replicates of Monte Carlo Fisher test for count data
   # as implemented in base R
   p <- list( marg_dia = sapply( 1:200, function(i) fisher.test( cross$F.1..M.2.$marg_dia, simulate.p.value = T, B = 1e5 )$p.value ) %>% as.data.frame() %>% mutate( var = "dia", type = "marg" ) )
   
   # add p-values for marginal moderator crosstabs and combined moderator/diagnosis crosstabs
-  for( i in mods ) p[[i]] <- lapply(
+  for ( i in mods ) p[[i]] <- lapply(
     
     # loop through all marginal and combined crosstabs
     setNames( c("marg_mod","comb"), c("marg_mod","comb") ),
@@ -185,6 +187,29 @@ tab <- p %>%
 
 # save the table
 write.table( tab, "tabs/table_5_fisher_test_results.csv", sep = ",", quote = F, row.names = F )
+
+
+# ---- post-hoc exploration of issues distribution by diagnosis/sex ----
+
+# prepare issue-specific crosstabs manually (because there's way too many )
+crsexp <- lapply( setNames(is,is), function(i) data.frame( `1` = rep(NA,3), `2` = rep(NA,3), row.names = dg ) )
+
+# fill-in the values
+for ( i in is ) for ( j in dg ) for ( k in 1:2 ) crsexp[[i]][j,k] <- d[ with( d, label == i & dg == j & F.1..M.2. == k ) , 2 ] %>% na.omit() %>% length()
+
+# save the crosstabs as xlsx
+write.xlsx( crsexp %>% `names<-`( substr( names(crsexp), 1, 31 ) ), file = "tabs/crosstabs_diasex.xlsx", rowNames = T )
+
+# prepare a tab for Fisher test results
+tab2 <- sapply( is, function(i) c( issue = i, p = fisher.test( crsexp[[i]] )$p.value ) ) %>%
+  t() %>% as.data.frame() %>%
+  mutate( 'p < .05' = ifelse( p < .05, "*", "" ), 'sig.' = ifelse( p < ( .05/nrow(.) ), "*", "" ) )
+
+
+# ---- saving Fisher tests results ----
+
+# save both series of analyses into one excel file
+write.xlsx( list( all = tab, diasex = tab2 ), "tabs/Fisher_tests.xlsx", rowNames = F )
 
 
 # ---- write down session info ----
