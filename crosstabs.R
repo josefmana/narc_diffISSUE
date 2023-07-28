@@ -1,7 +1,7 @@
 # This is a script that extracts crosstabs (contingency tables) of difficulties associated with narcolepsy w.r.t. moderators.
 
 # list required packages into a character object
-pkgs <- c( "rstudioapi", "dplyr", "tidyverse", "openxlsx" )
+pkgs <- c( "rstudioapi", "dplyr", "tidyverse", "ggplot2", "openxlsx" )
 
 # load or install packages as needed
 for ( i in pkgs ) {
@@ -57,22 +57,88 @@ cross <- lapply( setNames(mods, mods),
                          ) %>% `names<-`( c("marg_dia","marg_mod","comb") )
                  )
 
-# add simple contrasts within diagnoses and moderator levels for further description and save resulting tables as .xlsx
+# add simple contrasts within diagnoses and moderator levels for further description
 for ( i in mods ) {
   
-  # for cataplexy save table only
-  if( grepl("kata",i) ) write.xlsx( cross[[i]], file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = T )
+  # for cataplexy continue right away
+  if( grepl("kata",i) ) next
   
-  # for all remaining extract simple contrasts before saving
+  # for all remaining extract simple contrasts
   else {
     
     # adding diagnosis-specific and moderator level-specific tables
     for ( j in dimnames(ct[[i]])[[3]] ) cross[[i]][[ paste0("dia_",j) ]] <- ct[[i]][ , , j ]
     for ( j in dimnames(ct[[i]])[[2]] ) cross[[i]][[ paste0("mod_",j) ]] <- ct[[i]][ , j , ]
-    
-    # saving the table as .xlsx
-    write.xlsx( cross[[i]], file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = T )
+   
+  }
+}
 
+# calculate column percentages for all tables
+perc <- lapply( setNames( names(cross), names(cross) ),
+                # loop through all moderators
+                function(i)
+                  # loop through all tables within each moderator
+                  lapply( setNames( names(cross[[i]]), names(cross[[i]]) ),
+                          # calculate column percentages
+                          function(j) t( t( 100 *cross[[i]][[j]] ) / colSums( cross[[i]][[j]] ) )
+                          )
+                  )
+
+# save combined "cross (perc %)" tables as .xlsx
+for ( i in mods ) {
+  
+  write.xlsx(
+    
+    # prepare the table
+    lapply( setNames( names(cross[[i]]), names(cross[[i]]) ),
+            # loop through moderators
+            function(j) sapply( colnames( cross[[i]][[j]] ),
+                                # loop through columns
+                                function(k)
+                                  paste0( cross[[i]][[j]][ ,k], " (", sprintf( "%.2f", round( perc[[i]][[j]][ ,k], 2 ) ), " %)" )
+                                )
+            ),
+
+    # save it
+    file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = T
+    
+  )
+}
+
+# ---- crosstabs figures ---
+
+# set ggplot theme
+theme_set( theme_minimal(base_size = 20) )
+
+# start by saving the plot for marginal distribution of issues by diagnosis
+as.data.frame(perc$F.1..M.2.$marg_dia) %>%
+  rownames_to_column( var = "Issue" ) %>%
+  pivot_longer( -1, names_to = "Predictor value", values_to = "Column\nperc." ) %>%
+  ggplot( aes( x = `Predictor value`, y = Issue, fill = `Column\nperc.` ) ) +
+  geom_tile( color = "white" ) +
+  scale_fill_gradient( low = "white", high = "steelblue" ) +
+  labs( y = NULL, x = "dia" ) + theme( axis.title.x = element_text( face = "bold" ) )
+
+# save it
+ggsave( "figs/marg_dia.jpg", dpi = 300, width = 13.1, height = 14.3 )
+
+# next loop through all moderators and plot their marginal and interaction distributions
+for ( i in mods ) {
+  for ( j in c("marg_mod","comb") ) {
+    
+    # plot it
+    as.data.frame( perc[[i]][[j]] ) %>%
+      rownames_to_column( var = "Issue" ) %>%
+      pivot_longer( -1, names_to = "Predictor value", values_to = "Column\nperc." ) %>%
+      ggplot( aes( x = `Predictor value`, y = Issue, fill = `Column\nperc.` ) ) +
+      geom_tile( color = "white" ) +
+      scale_fill_gradient( low = "white", high = "steelblue" ) +
+      labs( y = NULL, x = paste0( ifelse( j == "comb", "dia_", "" ), i ) ) +
+      theme( axis.title.x = element_text( face = "bold" ) )
+    
+    # save it
+    ggsave( paste0( "figs/", i, "_", j, ".jpg" ), dpi = 300, width = 13.1, height = 14.3 )
+    
   }
 }
 
