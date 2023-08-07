@@ -13,7 +13,11 @@ for ( i in pkgs ) {
 setwd( dirname(rstudioapi::getSourceEditorContext()$path) )
 
 # read the data sets for analysis
-d <- read.csv( "_nogithub/data/df.csv", sep = ";" ) %>% mutate( `Lék...který` = as.character(`Lék...který`) )
+d <- read.csv( "_nogithub/data/df.csv", sep = ";" ) %>%
+  # re-format where needed
+  mutate( `Lék...který` = as.character(`Lék...který`) ) %>%
+  mutate( label = ifelse( label == "nic.neobtěžuje", "No problem reported", label ) )
+n <- read.csv( "_nogithub/data/nms.csv", sep = ";" ) # names mapping
 
 # list all moderators of interest as weel as all diagnoses under study
 mods <- names(d)[ c(3,5,8,9,10,11,14,16,17,19,21,23,25,27,28,30) ]
@@ -109,6 +113,9 @@ for ( i in mods ) {
 
 # ---- crosstabs figures ---
 
+# prepare an order for figures (the most common problem across diagnoses in the bottom)
+o <- ( table(d$label) %>% as.data.frame() %>% arrange( desc(Freq) ) %>% select( Var1 ) %>% c() )$Var1
+
 # set ggplot theme
 theme_set( theme_minimal(base_size = 20) )
 
@@ -116,13 +123,14 @@ theme_set( theme_minimal(base_size = 20) )
 as.data.frame(perc$F.1..M.2.$marg_dia) %>%
   rownames_to_column( var = "Issue" ) %>%
   pivot_longer( -1, names_to = "Predictor value", values_to = "Column\nperc." ) %>%
+  mutate( Issue = factor( Issue, levels = o, ordered = T ) ) %>%
   ggplot( aes( x = `Predictor value`, y = Issue, fill = `Column\nperc.` ) ) +
   geom_tile( color = "white" ) +
   scale_fill_gradient( low = "white", high = "steelblue" ) +
-  labs( y = NULL, x = "dia" ) + theme( axis.title.x = element_text( face = "bold" ) )
+  labs( y = NULL, x = "Diagnosis (NT1,NT2, IH)" ) + theme( axis.title.x = element_text( face = "bold" ) )
 
 # save it
-ggsave( "figs/marg_dia.jpg", dpi = 300, width = 13.1, height = 14.3 )
+ggsave( "figs/Diagnosis (NT1,NT2, IH).jpg", dpi = 300, width = 13.1, height = 14.3 )
 
 # next loop through all moderators and plot their marginal and interaction distributions
 for ( i in mods ) {
@@ -132,10 +140,11 @@ for ( i in mods ) {
     as.data.frame( perc[[i]][[j]] ) %>%
       rownames_to_column( var = "Issue" ) %>%
       pivot_longer( -1, names_to = "Predictor value", values_to = "Column\nperc." ) %>%
+      mutate( Issue = factor( Issue, levels = o, ordered = T ) ) %>%
       ggplot( aes( x = `Predictor value`, y = Issue, fill = `Column\nperc.` ) ) +
       geom_tile( color = "white" ) +
       scale_fill_gradient( low = "white", high = "steelblue" ) +
-      labs( y = NULL, x = paste0( ifelse( j == "comb", "dia_", "" ), i ) ) +
+      labs( y = NULL, x = paste0( ifelse( j == "comb", "Diagnosis / ", "" ), n[ n$X2 == i , "X1" ] ) ) +
       theme( axis.title.x = element_text( face = "bold" ) )
     
     # save it

@@ -82,6 +82,9 @@ d1 <- do.call( rbind.data.frame, d1 )
 # save the outcome as a data frame ready for analyses
 write.table( d1, "_nogithub/data/df.csv", sep = ";", row.names = F, quote = F )
 
+# add naming mapping as .csv
+write.table( read.xlsx( "_nogithub/raw/moderators-eng.xlsx", sheet = "List1", colNames = F ), "_nogithub/data/nms.csv", sep = ";", row.names = F, quote = F )
+
 
 # ---- write down session info ----
 
