@@ -26,6 +26,9 @@ mods <- names(d)[ c(3,5,8,9,10,11,14,16,17,19,21,23,25,27,28,30) ]
 dg <- levels( as.factor( d$dg ) )
 is <- na.omit( unique( d$label ) )
 
+# prepare an order for tables and figures (the most common problem across diagnoses in the bottom)
+o <- ( table(d$label) %>% as.data.frame() %>% arrange( desc(Freq) ) %>% select( Var1 ) %>% c() )$Var1
+
 
 # ---- crosstabs extraction ----
 
@@ -103,20 +106,24 @@ for ( i in mods ) {
                                 # loop through columns
                                 function(k)
                                   paste0( cross[[i]][[j]][ ,k], " (", sprintf( "%.2f", round( perc[[i]][[j]][ ,k], 2 ) ), " %)" )
-                                )
+                                ) %>%
+              # arrange the rows
+              `rownames<-` ( rownames(cross[[i]][[j]]) ) %>%
+              as.data.frame %>%
+              rownames_to_column( "Issue" ) %>%
+              mutate( Issue = factor( Issue, levels = o, ordered = T) ) %>%
+              arrange( desc(Issue) )
+            
             ),
 
     # save it
-    file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = T
+    file = paste0("tabs/crosstabs/",i,".xlsx"), rowNames = F
     
   )
 }
 
 
 # ---- crosstabs figures ---
-
-# prepare an order for figures (the most common problem across diagnoses in the bottom)
-o <- ( table(d$label) %>% as.data.frame() %>% arrange( desc(Freq) ) %>% select( Var1 ) %>% c() )$Var1
 
 # set ggplot theme
 theme_set( theme_minimal(base_size = 20) )
