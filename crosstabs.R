@@ -17,7 +17,9 @@ d <- read.csv( "_nogithub/data/df.csv", sep = ";" ) %>%
   # re-format where needed
   mutate( `Lék...který` = as.character(`Lék...který`) ) %>%
   mutate( label = ifelse( label == "nic.neobtěžuje", "No problem reported", label ) )
-n <- read.csv( "_nogithub/data/nms.csv", sep = ";" ) # names mapping
+
+# read the names mapping file
+n <- read.csv( "_nogithub/data/nms.csv", sep = ";" )
 
 # list all moderators of interest as weel as all diagnoses under study
 mods <- names(d)[ c(3,5,8,9,10,11,14,16,17,19,21,23,25,27,28,30) ]
@@ -192,7 +194,10 @@ tab <- p %>%
   group_by( var, type ) %>% # split by crosstabs
   slice( which.max(p) ) %>% # keep only the maximum p-value
   mutate( 'p < .05' = ifelse( p < .05, "*", "" ), 'sig.' = ifelse( p < ( .05/nrow(.) ), "*", "" ) ) %>%
-  relocate( p, .after = type )
+  mutate( predictor = paste0( with( n, X1[ X2 == var ] ), ifelse( type == "comb", " * Diagnosis", "" ) ), .before = 1 ) %>%
+  ungroup() %>%
+  select( -c("var", "type") ) %>%
+  relocate( p, .after = predictor )
 
 # save the table
 write.table( tab, "tabs/table_5_fisher_test_results.csv", sep = ",", quote = F, row.names = F )
